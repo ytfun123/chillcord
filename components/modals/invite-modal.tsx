@@ -1,24 +1,23 @@
 "use client";
 
-import React, { useState } from "react";
 import { Check, Copy, RefreshCw } from "lucide-react";
-import axios from "axios";
 
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-
+import { Label } from "@/components/ui/label";
 import { useModal } from "@/hooks/use-modal-store";
 import { useOrigin } from "@/hooks/use-origin";
+import axios from "axios";
+import { useState } from "react";
 
-export function InviteModal() {
-  const { isOpen, onOpen, onClose, type, data } = useModal();
+const InviteModal = () => {
+  const { isOpen, onClose, type, data, onOpen } = useModal();
   const origin = useOrigin();
 
   const isModalOpen = isOpen && type === "invite";
@@ -33,19 +32,16 @@ export function InviteModal() {
     navigator.clipboard.writeText(inviteUrl);
     setCopied(true);
 
-    setTimeout(() => {
-      setCopied(false);
-    }, 1000);
+    setTimeout(() => setCopied(false), 1000);
   };
 
-  const onNew = async () => {
+  const onNewInvite = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-
       const response = await axios.patch(
-        `/api/servers/${server?.id}/invite-code`
+        `/api/servers/${server?.id}/invite-code`,
+        {},
       );
-
       onOpen("invite", { server: response.data });
     } catch (error) {
       console.error(error);
@@ -57,8 +53,8 @@ export function InviteModal() {
   return (
     <Dialog open={isModalOpen} onOpenChange={onClose}>
       <DialogContent className="bg-white text-black p-0 overflow-hidden">
-        <DialogHeader className="pt-8 px-6">
-          <DialogTitle className="text-2xl text-center font-bold">
+        <DialogHeader className="pt-6 px-6">
+          <DialogTitle className="text-2xl font-bold text-center">
             Invite Friends
           </DialogTitle>
         </DialogHeader>
@@ -68,31 +64,32 @@ export function InviteModal() {
           </Label>
           <div className="flex items-center mt-2 gap-x-2">
             <Input
-              readOnly
               disabled={isLoading}
-              value={inviteUrl}
               className="bg-zinc-300/50 border-0 focus-visible:ring-0 text-black focus-visible:ring-offset-0"
+              value={inviteUrl}
             />
-            <Button disabled={isLoading} onClick={onCopy} size="icon">
+            <Button size="icon" disabled={isLoading}>
               {copied ? (
                 <Check className="w-4 h-4" />
               ) : (
-                <Copy className="w-4 h-4" />
+                <Copy className="w-4 h-4" onClick={onCopy} />
               )}
             </Button>
           </div>
           <Button
+            onClick={onNewInvite}
             disabled={isLoading}
-            onClick={onNew}
             variant="link"
             size="sm"
             className="text-xs text-zinc-500 mt-4"
           >
             Generate a new link
-            <RefreshCw className="w-4 h-4 ml-2" />
+            <RefreshCw className="ml-2 w-4 h-4" />
           </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export default InviteModal;

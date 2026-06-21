@@ -1,86 +1,88 @@
-import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { Member, Message, Profile } from "@prisma/client";
-
 import { useSocket } from "@/components/providers/socket-provider";
+import { MessageWithMemberWithProfile } from "@/types/server";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 type ChatSocketProps = {
-  addKey: string;
-  updateKey: string;
-  queryKey: string;
-};
-
-type MessageWithMemberWithProfile = Message & {
-  member: Member & {
-    profile: Profile;
-  };
+	addKey: string;
+	updateKey: string;
+	queryKey: string;
 };
 
 export const useChatSocket = ({
-  addKey,
-  updateKey,
-  queryKey
+	addKey,
+	updateKey,
+	queryKey,
 }: ChatSocketProps) => {
-  const { socket } = useSocket();
-  const queryClient = useQueryClient();
+	const { socket } = useSocket();
+	const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!socket) return;
+	useEffect(() => {
+		if (!socket) {
+			return;
+		}
 
-    socket.on(updateKey, (message: MessageWithMemberWithProfile) => {
-      queryClient.setQueryData([queryKey], (oldData: any) => {
-        if (!oldData || !oldData.pages || oldData.pages.length === 0) {
-          return oldData;
-        }
+		socket.on(updateKey, (message: MessageWithMemberWithProfile) => {
+			queryClient.setQueryData([queryKey], (oldData: any) => {
+				if (!oldData || !oldData.pages || oldData.pages.length === 0) {
+					return oldData;
+				}
 
-        const newData = oldData.pages.map((page: any) => {
-          return {
-            ...page,
-            items: page.items.map((item: MessageWithMemberWithProfile) => {
-              if (item.id === message.id) {
-                return message;
-              }
-              return item;
-            })
-          };
-        });
+				const newPages = oldData.pages.map((page: any) => {
+					return {
+						...page,
+						items: page.items.map((item: MessageWithMemberWithProfile) => {
+							if (item.id === message.id) {
+								return message;
+							}
 
-        return {
-          ...oldData,
-          pages: newData
-        };
-      });
-    });
+							return item;
+						}),
+					};
+				});
 
-    socket.on(addKey, (message: MessageWithMemberWithProfile) => {
-      queryClient.setQueryData([queryKey], (oldData: any) => {
-        if (!oldData || !oldData.pages || oldData.pages.length === 0) {
-          return {
-            pages: [
-              {
-                items: [message]
-              }
-            ]
-          };
-        }
+				return {
+					...oldData,
+					pages: newPages,
+				};
+			});
+		});
 
-        const newData = [...oldData.pages];
+		socket.on(addKey, (message: MessageWithMemberWithProfile) => {
+			console.log(
+				"🚀 ~ file: use-chat-socket.ts:52 ~ socket.on ~ message:",
+				message,
+			);
+			queryClient.setQueryData([queryKey], (oldData: any) => {
+				if (!oldData || !oldData.pages || oldData.pages.length === 0) {
+					return {
+						pages: [
+							{
+								items: [message],
+							},
+						],
+					};
+				}
 
-        newData[0] = {
-          ...newData[0],
-          items: [message, ...newData[0].items]
-        };
+				// create a new array of pages
+				const newData = [...oldData.pages];
 
-        return {
-          ...oldData,
-          pages: newData
-        };
-      });
-    });
+				// add the new message to the first page
+				newData[0] = {
+					...newData[0],
+					items: [message, ...newData[0].items],
+				};
 
-    return () => {
-      socket.off(addKey);
-      socket.off(updateKey);
-    };
-  }, [queryClient, addKey, queryKey, socket, updateKey]);
+				return {
+					...oldData,
+					pages: newData,
+				};
+			});
+		});
+
+		return () => {
+			socket.off(updateKey, () => {});
+			socket.off(addKey, () => {});
+		};
+	}, [addKey, queryKey, updateKey]);
 };

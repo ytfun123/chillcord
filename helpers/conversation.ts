@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 
 export const getOrCreateConversation = async (
   memberOneId: string,
-  memberTwoId: string
+  memberTwoId: string,
 ) => {
   let conversation =
     (await findConversation(memberOneId, memberTwoId)) ||
@@ -15,49 +15,59 @@ export const getOrCreateConversation = async (
   return conversation;
 };
 
-const findConversation = async (
+export const findConversation = async (
   memberOneId: string,
-  memberTwoId: string
+  memberTwoId: string,
 ) => {
   try {
     return await db.conversation.findFirst({
       where: {
-        AND: [{ memberOneId }, { memberTwoId }]
+        AND: [{ memberOneId: memberOneId }, { memberTwoId: memberTwoId }],
       },
       include: {
         memberOne: {
-          include: { profile: true }
+          include: {
+            profile: true,
+          },
         },
         memberTwo: {
-          include: { profile: true }
-        }
-      }
+          include: {
+            profile: true,
+          },
+        },
+      },
     });
   } catch (error) {
+    console.error("[findConversation] error: ", error);
     return null;
   }
 };
 
-const createNewConversation = async (
+export const createNewConversation = async (
   memberOneId: string,
-  memberTwoId: string
+  memberTwoId: string,
 ) => {
   try {
     return await db.conversation.create({
       data: {
-        memberOneId,
-        memberTwoId
+        memberOneId: memberOneId,
+        memberTwoId: memberTwoId,
       },
       include: {
         memberOne: {
-          include: { profile: true }
+          include: {
+            profile: true,
+          },
         },
         memberTwo: {
-          include: { profile: true }
-        }
-      }
+          include: {
+            profile: true,
+          },
+        },
+      },
     });
   } catch (error) {
+    console.error("[createNewConversation] error: ", error);
     return null;
   }
 };

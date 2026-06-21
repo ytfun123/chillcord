@@ -1,132 +1,77 @@
 "use client";
 
-import React from "react";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import axios from "axios";
-import { useRouter } from "next/navigation";
-
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FileUpload } from "@/components/file-upload";
+
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { useModal } from "@/hooks/use-modal-store";
+import createServerIcon from "@/public/create-server.svg";
+import { ChevronRight } from "lucide-react";
+import Image from "next/image";
 
-const formSchema = z.object({
-  name: z.string().min(1, { message: "Server name is required." }),
-  imageUrl: z.string().min(1, { message: "Server image is required." })
-});
+const CreateServerModal = () => {
+	const { isOpen, onClose, type, onOpen } = useModal();
 
-export function CreateServerModal() {
-  const { isOpen, onClose, type } = useModal();
-  const router = useRouter();
+	const isModalOpen = isOpen && type === "createServer";
 
-  const isModalOpen = isOpen && type === "createServer";
+	const handleClose = () => {
+		onClose();
+	};
 
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      imageUrl: ""
-    }
-  });
+	return (
+		<Dialog open={isModalOpen} onOpenChange={handleClose}>
+			<DialogContent className="bg-white text-black p-0 overflow-hidden">
+				<DialogHeader className="pt-6 px-6">
+					<DialogTitle className="text-2xl font-bold text-center">
+						Create a server
+					</DialogTitle>
+					<DialogDescription className="text-center text-zinc-500">
+						Your server is where you and your friends hang out. Make yours and
+						start talking.
+					</DialogDescription>
+				</DialogHeader>
 
-  const isLoading = form.formState.isSubmitting;
+				<div className="px-6 py-3">
+					<button
+						onClick={() => onOpen("customizeServer")}
+						className="flex justify-center items-center w-full mt-2 hover:bg-gray-200 border-[1px] border-gray-200 rounded-md px-2 py-2"
+					>
+						<Image
+							src={createServerIcon}
+							width={48}
+							height={48}
+							className="object-cover object-center rounded-xl"
+							alt="create-server"
+						/>
+						<p className="ml-4 text-black text-md font-bold">Create My Own</p>
+						<ChevronRight className="ml-auto" />
+					</button>
+				</div>
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    try {
-      await axios.post("/api/servers", values);
+				<DialogFooter className="px-6 py-4 bg-gray-100">
+					<div className="flex flex-1 justify-center items-center flex-col">
+						<p className="text-black text-xl font-semibold">
+							Have an invite already?
+						</p>
+						<Button
+							onClick={() => onOpen("joinServer")}
+							type="submit"
+							className="w-full mt-2 bg-zinc-500 hover:bg-zinc-600 text-white"
+							variant="default"
+						>
+							Join a Server
+						</Button>
+					</div>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+};
 
-      form.reset();
-      router.refresh();
-      onClose();
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleClose = () => {
-    form.reset();
-    onClose();
-  };
-
-  return (
-    <Dialog open={isModalOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-white text-black p-0 overflow-hidden">
-        <DialogHeader className="pt-8 px-6">
-          <DialogTitle className="text-2xl text-center font-bold">
-            Customize your server
-          </DialogTitle>
-          <DialogDescription className="text-center text-zinc-500">
-            Give your server a personality with a name and an image. You can
-            always change it later.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <div className="space-y-8 px-6">
-              <div className="flex items-center justify-center text-center">
-                <FormField
-                  control={form.control}
-                  name="imageUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <FileUpload
-                          endpoint="serverImage"
-                          value={field.value}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-secondary/70">
-                      Server Name
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={isLoading}
-                        placeholder="Enter server name"
-                        className="bg-zinc-300/50 border-0 focus-visible: ring-0 text-black focus-visible:ring-offset-0"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <DialogFooter className="bg-gray-100 px-6 py-4">
-              <Button disabled={isLoading} variant="primary">
-                Create
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
+export default CreateServerModal;
